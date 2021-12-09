@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class Product with ChangeNotifier {
-  final String id;
+  final String? id;
   final String title;
   final String description;
   final double price;
@@ -76,7 +76,29 @@ class Products with ChangeNotifier {
     return products.firstWhere((product) => product.id == id);
   }
 
-  void result() {
+  void addProduct(Product product) {
+    final newProduct = Product(
+        id: DateTime.now().toString(),
+        title: product.title,
+        description: product.description,
+        imageUrl: product.imageUrl,
+        price: product.price);
+    _products.add(product);
+    notifyListeners();
+  }
+
+  void updateProduct(String id, Product newProduct) {
+    final prodIndex = _products.indexWhere((prod) => prod.id == newProduct.id);
+    if (prodIndex >= 0) {
+      _products[prodIndex] = newProduct;
+      notifyListeners();
+    } else {
+      print("...");
+    }
+  }
+
+  void deleteProduct(String id) {
+    _products.removeWhere((prod) => prod.id == id);
     notifyListeners();
   }
 }
