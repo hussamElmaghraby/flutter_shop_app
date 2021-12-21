@@ -1,4 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_shop_app/models/http_exception.dart';
+import 'package:http/http.dart' as http;
 
 class Product with ChangeNotifier {
   final String? id;
@@ -16,89 +20,151 @@ class Product with ChangeNotifier {
     required this.imageUrl,
     this.isFavorite = false,
   });
-  void toggleFavorite() {
+  void _setFavValue(bool newValue) {
+    isFavorite = newValue;
+    notifyListeners();
+  }
+
+  Future<void> toggleFavorite() async {
+    final oldStatus = isFavorite;
     isFavorite = !isFavorite;
+    notifyListeners();
+    try {
+      var response = await http.patch(
+        Uri.parse(
+            'https://shop-app-58703-default-rtdb.firebaseio.com/products/$id.json'),
+        body: json.encode(
+          {'isFavorite': isFavorite},
+        ),
+      );
+
+      if (response.statusCode >= 400) {
+        _setFavValue(oldStatus);
+        throw Exception("Error changing status");
+      }
+    } catch (error) {
+      _setFavValue(oldStatus);
+      rethrow;
+    }
     notifyListeners();
   }
 }
 
 class Products with ChangeNotifier {
   // ignore: prefer_final_fields
-  List<Product> _products = [
-    Product(
-      id: 'a1',
-      title: 'Product1',
-      description: 'desc desc desc',
-      imageUrl:
-          'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxzZWFyY2h8M3x8cHJvZHVjdHxlbnwwfHwwfHw%3D&w=1000&q=80',
-      price: 2.6,
-      isFavorite: false,
-    ),
-    Product(
-      id: 'a2',
-      title: 'Product2',
-      description: 'desc desc desc',
-      imageUrl:
-          'https://images.pexels.com/photos/90946/pexels-photo-90946.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500',
-      price: 2.6,
-      isFavorite: false,
-    ),
-    Product(
-      id: 'a3',
-      title: 'Product3',
-      description: 'desc desc desc',
-      imageUrl:
-          'https://images.unsplash.com/photo-1523275335684-37898b6baf30?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxzZWFyY2h8Mnx8cHJvZHVjdHxlbnwwfHwwfHw%3D&w=1000&q=80',
-      price: 2.6,
-      isFavorite: false,
-    ),
-    Product(
-      id: 'a4',
-      title: 'Product4',
-      description: 'desc desc desc',
-      imageUrl:
-          'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSreAlx8vw_nSEP7lJzvHzk__lcXehVxw02kQ&usqp=CAU',
-      price: 2.6,
-      isFavorite: false,
-    ),
-  ];
+  List<Product>? _products = [];
   var _showFavoritesOnly = false;
 
   List<Product> get products {
-    return [..._products];
+    return [..._products!];
   }
 
+  final uri = 'https://shop-app-58703-default-rtdb.firebaseio.com/';
+
   List<Product> get favoriteProduct {
-    return _products.where((product) => product.isFavorite == true).toList();
+    return _products!.where((product) => product.isFavorite == true).toList();
   }
 
   Product findById(String id) {
     return products.firstWhere((product) => product.id == id);
   }
 
-  void addProduct(Product product) {
-    final newProduct = Product(
-        id: DateTime.now().toString(),
-        title: product.title,
-        description: product.description,
-        imageUrl: product.imageUrl,
-        price: product.price);
-    _products.add(product);
-    notifyListeners();
-  }
-
-  void updateProduct(String id, Product newProduct) {
-    final prodIndex = _products.indexWhere((prod) => prod.id == newProduct.id);
-    if (prodIndex >= 0) {
-      _products[prodIndex] = newProduct;
+  Future<void> addProduct(Product product) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$uri/products.json'),
+        body: json.encode(
+          {
+            'title': product.title,
+            'description': product.description,
+            'price': product.price,
+            'imageUrl': product.imageUrl,
+            'isFavorite': product.isFavorite,
+            // 'creatorId': "",
+          },
+        ),
+      );
+      final newProduct = Product(
+          id: json.decode(response.body)['name'],
+          title: product.title,
+          description: product.description,
+          imageUrl: product.imageUrl,
+          price: product.price,
+          isFavorite: product.isFavorite);
+      _products!.add(newProduct);
       notifyListeners();
-    } else {
-      print("...");
+    } catch (error) {
+      throw error;
     }
   }
 
-  void deleteProduct(String id) {
-    _products.removeWhere((prod) => prod.id == id);
+  Future<void> updateProduct(String id, Product newProduct) async {
+    try {
+      await http.patch(
+        Uri.parse('$uri/products/$id.json'),
+        body: json.encode(
+          {
+            'title': newProduct.title,
+            'description': newProduct.description,
+            'price': newProduct.price,
+            'imageUrl': newProduct.imageUrl,
+            // 'isFavourite': newProduct.isFavorite,
+          },
+        ),
+      );
+      final prodIndex =
+          _products!.indexWhere((prod) => prod.id == newProduct.id);
+      if (prodIndex >= 0) {
+        _products![prodIndex] = newProduct;
+        notifyListeners();
+      } else {
+        print("...");
+      }
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  Future<void> fetchProducts() async {
+    try {
+      final response = await http.get(Uri.parse('$uri/products.json'));
+      final extractedData = json.decode(response.body) as Map<String?, dynamic>;
+      final List<Product> loadedProduct = [];
+      extractedData.forEach((prodId, prodData) {
+        loadedProduct.add(
+          Product(
+            id: prodId,
+            title: prodData['title'],
+            description: prodData['description'],
+            price: prodData['price'],
+            imageUrl: prodData['imageUrl'],
+            isFavorite: prodData['isFavorite'],
+          ),
+        );
+        _products = loadedProduct;
+        notifyListeners();
+      });
+    } catch (error) {
+      throw error;
+    }
+    {}
+  }
+
+  Future<void> deleteProduct(String id) async {
+    final existingProductIndex = _products!.indexWhere((prod) => prod.id == id);
+    Product? existingProduct = _products![existingProductIndex];
+    // ignore: argument_type_not_assignable_to_error_handler
+    _products!.removeAt(existingProductIndex);
     notifyListeners();
+    final response = await http.delete(Uri.parse('$uri/$id.json'));
+
+    if (response.statusCode >= 400) {
+      //something is wrong.
+      _products!.insert(existingProductIndex, existingProduct);
+      notifyListeners();
+      throw HttpException("Could not delete product");
+    }
+
+    existingProduct = null;
   }
 }
