@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_shop_app/providers/Cart.dart';
+import 'package:flutter_shop_app/providers/auth.dart';
 import 'package:flutter_shop_app/providers/orders.dart';
 import 'package:flutter_shop_app/providers/products.dart';
+import 'package:flutter_shop_app/screens/auth_screen.dart';
 import 'package:flutter_shop_app/screens/cart_screen.dart';
 import 'package:flutter_shop_app/screens/edit_product_screen.dart';
 import 'package:flutter_shop_app/screens/orders_screen.dart';
@@ -23,35 +25,57 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(
-          create: (ctx) => Products(),
+          create: (ctx) => Auth(),
+        ),
+        // this provider will rebuild when auth rebuilt.
+        // if auth were to update, then 'Product' will be able to update accordingly.
+        // Creates products object with our list
+        ChangeNotifierProxyProvider<Auth, Products>(
+          update: (_, auth, previousProducts) => Products(
+              auth.token,
+              auth.userId,
+              previousProducts == null ? [] : previousProducts.products),
+          create: (context) => Products(null, null, []),
         ),
         ChangeNotifierProvider(
           create: (ctx) => Carts(),
         ),
-        ChangeNotifierProvider(
-          create: (ctx) => Orders(),
+        ChangeNotifierProxyProvider<Auth, Orders>(
+          update: (_, auth, previousOrders) => Orders(auth.token, auth.userId,
+              previousOrders == null ? [] : previousOrders.orders),
+          create: (ctx) => Orders(null, null, []),
         ),
       ],
-      child: MaterialApp(
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSwatch(
-            primarySwatch: Colors.purple,
-          ).copyWith(secondary: Colors.deepOrange, surface: Colors.white),
-          fontFamily: 'Lato',
-          textTheme: const TextTheme(
-            headline1: TextStyle(
-                fontFamily: 'Lato', fontSize: 24, fontWeight: FontWeight.bold),
-          ),
-        ),
-        home: ProductsOverviewScreen(),
-        routes: {
-          ProductDetailScreen.namedRoute: (context) => ProductDetailScreen(),
-          CartScreen.routeName: (context) => CartScreen(),
-          OrdersScreen.namedRoute: (context) => OrdersScreen(),
-          UserProductScreen.namedRoute: (context) => UserProductScreen(),
-          EditProductScreen.namedRoute: (context) => EditProductScreen(),
-        },
-      ),
+      // Material app will rebuild when ever Auth rebuilds.
+      child: Consumer<Auth>(
+          // auth -> is the latest object of auth
+          builder: (context, auth, _) => MaterialApp(
+                theme: ThemeData(
+                  colorScheme: ColorScheme.fromSwatch(
+                    primarySwatch: Colors.purple,
+                    accentColor: Colors.deepOrange,
+                  ).copyWith(
+                      secondary: Colors.deepOrange, surface: Colors.white),
+                  fontFamily: 'Lato',
+                  textTheme: const TextTheme(
+                    headline1: TextStyle(
+                        fontFamily: 'Lato',
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold),
+                  ),
+                ),
+                home: auth.isAuth ? ProductsOverviewScreen() : AuthScreen(),
+                routes: {
+                  ProductDetailScreen.namedRoute: (context) =>
+                      ProductDetailScreen(),
+                  CartScreen.routeName: (context) => CartScreen(),
+                  OrdersScreen.namedRoute: (context) => OrdersScreen(),
+                  UserProductScreen.namedRoute: (context) =>
+                      UserProductScreen(),
+                  EditProductScreen.namedRoute: (context) =>
+                      EditProductScreen(),
+                },
+              )),
     );
   }
 }

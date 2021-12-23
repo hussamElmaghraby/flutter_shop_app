@@ -13,13 +13,12 @@ class OrdersScreen extends StatefulWidget {
 }
 
 class _OrdersScreenState extends State<OrdersScreen> {
-  Future _obtainFutureOrders() {
-    return Provider.of<Orders>(context, listen: false).fetchOrders();
+  Future _obtainFutureOrders() async {
+    await Provider.of<Orders>(context, listen: false).fetchOrders();
   }
 
   @override
   Widget build(BuildContext context) {
-    print("widget build !");
     return Scaffold(
       appBar: AppBar(
         title: const Text('Orders'),
@@ -33,6 +32,8 @@ class _OrdersScreenState extends State<OrdersScreen> {
           } else {
             if (snapshot.error != null) {
               // do error handling
+              print(snapshot.error);
+              print(snapshot.data);
               return const Center(
                 child: Text("An Error Occurs !"),
               );

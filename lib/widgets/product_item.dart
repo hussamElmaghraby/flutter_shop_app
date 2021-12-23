@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_shop_app/providers/Cart.dart';
+import 'package:flutter_shop_app/providers/auth.dart';
 import 'package:flutter_shop_app/providers/products.dart';
 import 'package:flutter_shop_app/screens/product_detail_screen.dart';
 import 'package:provider/provider.dart';
@@ -13,6 +14,7 @@ class ProductItem extends StatelessWidget {
       // listen: false,
     );
     final cart = Provider.of<Carts>(context);
+    final auth = Provider.of<Auth>(context);
     return ClipRRect(
       borderRadius: BorderRadius.circular(15),
       child: GridTile(
@@ -39,7 +41,7 @@ class ProductItem extends StatelessWidget {
               ),
               onPressed: () async {
                 try {
-                  await product.toggleFavorite();
+                  await product.toggleFavorite(auth.token!, auth.userId!);
                 } catch (error) {
                   scaffold.showSnackBar(
                     const SnackBar(

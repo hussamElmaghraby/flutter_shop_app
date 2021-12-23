@@ -22,6 +22,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
     description: '',
     price: 0,
     imageUrl: '',
+    userId: '',
   );
   var _isInit = true;
   var _isLoading = false;
@@ -167,6 +168,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
                       onSaved: (value) {
                         _edittedProduct = Product(
                             id: _edittedProduct.id,
+                            userId: null,
                             title: value!,
                             description: _edittedProduct.description,
                             price: _edittedProduct.price,
@@ -198,7 +200,8 @@ class _EditProductScreenState extends State<EditProductScreen> {
                             title: _edittedProduct.title,
                             description: _edittedProduct.description,
                             price: double.parse(value!),
-                            imageUrl: _edittedProduct.imageUrl);
+                            imageUrl: _edittedProduct.imageUrl,
+                            userId: '');
                       },
                     ),
                     TextFormField(
@@ -225,7 +228,8 @@ class _EditProductScreenState extends State<EditProductScreen> {
                             description: value!,
                             price: _edittedProduct.price,
                             imageUrl: _edittedProduct.imageUrl,
-                            isFavorite: _edittedProduct.isFavorite);
+                            isFavorite: _edittedProduct.isFavorite,
+                            userId: '');
                       },
                     ),
                     Row(
@@ -280,7 +284,8 @@ class _EditProductScreenState extends State<EditProductScreen> {
                                   description: _edittedProduct.description,
                                   price: _edittedProduct.price,
                                   imageUrl: value!,
-                                  isFavorite: _edittedProduct.isFavorite);
+                                  isFavorite: _edittedProduct.isFavorite,
+                                  userId: '');
                             },
                             // cause we want to have the image before it be submitted.
                             // because the controller can be updated when we type on the form fields.

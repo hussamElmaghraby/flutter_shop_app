@@ -10,6 +10,7 @@ class Product with ChangeNotifier {
   final String description;
   final double price;
   final String imageUrl;
+  final String? userId;
   bool isFavorite;
 
   Product({
@@ -17,6 +18,7 @@ class Product with ChangeNotifier {
     required this.title,
     required this.description,
     required this.price,
+    required this.userId,
     required this.imageUrl,
     this.isFavorite = false,
   });
@@ -25,24 +27,27 @@ class Product with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> toggleFavorite() async {
+  Future<void> toggleFavorite(String authToken, String userId) async {
     final oldStatus = isFavorite;
     isFavorite = !isFavorite;
     notifyListeners();
     try {
-      var response = await http.patch(
+      var response = await http.put(
         Uri.parse(
-            'https://shop-app-58703-default-rtdb.firebaseio.com/products/$id.json'),
+          'https://shop-app-58703-default-rtdb.firebaseio.com/userFavorites/$userId/$id.json?auth=$authToken',
+        ),
         body: json.encode(
-          {'isFavorite': isFavorite},
+          isFavorite,
         ),
       );
-
+      print('error out');
       if (response.statusCode >= 400) {
         _setFavValue(oldStatus);
+        print('error if');
         throw Exception("Error changing status");
       }
     } catch (error) {
+      print('error catch');
       _setFavValue(oldStatus);
       rethrow;
     }
@@ -54,6 +59,10 @@ class Products with ChangeNotifier {
   // ignore: prefer_final_fields
   List<Product>? _products = [];
   var _showFavoritesOnly = false;
+  final String? authToken;
+  final String? userId;
+
+  Products(this.authToken, this.userId, this._products);
 
   List<Product> get products {
     return [..._products!];
@@ -72,15 +81,14 @@ class Products with ChangeNotifier {
   Future<void> addProduct(Product product) async {
     try {
       final response = await http.post(
-        Uri.parse('$uri/products.json'),
+        Uri.parse('$uri/products.json?auth=$authToken'),
         body: json.encode(
           {
             'title': product.title,
             'description': product.description,
             'price': product.price,
             'imageUrl': product.imageUrl,
-            'isFavorite': product.isFavorite,
-            // 'creatorId': "",
+            'creatorId': userId,
           },
         ),
       );
@@ -90,7 +98,8 @@ class Products with ChangeNotifier {
           description: product.description,
           imageUrl: product.imageUrl,
           price: product.price,
-          isFavorite: product.isFavorite);
+          isFavorite: product.isFavorite,
+          userId: '');
       _products!.add(newProduct);
       notifyListeners();
     } catch (error) {
@@ -101,7 +110,7 @@ class Products with ChangeNotifier {
   Future<void> updateProduct(String id, Product newProduct) async {
     try {
       await http.patch(
-        Uri.parse('$uri/products/$id.json'),
+        Uri.parse('$uri/products/$id.json?auth=$authToken'),
         body: json.encode(
           {
             'title': newProduct.title,
@@ -125,10 +134,23 @@ class Products with ChangeNotifier {
     }
   }
 
-  Future<void> fetchProducts() async {
+  Future<void> fetchProducts([bool filterByUser = false]) async {
+    final filterString =
+        filterByUser ? 'orderBy="creatorId"&equalTo="$userId"' : '';
     try {
-      final response = await http.get(Uri.parse('$uri/products.json'));
+      final response = await http
+          .get(Uri.parse('$uri/products.json?auth=$authToken&$filterString'));
       final extractedData = json.decode(response.body) as Map<String?, dynamic>;
+      // if (extractedData == null) {
+      //   return;
+      // }
+      final url =
+          'https://shop-app-58703-default-rtdb.firebaseio.com/userFavorites/$userId.json?auth=$authToken';
+      final favoriteResponse = await http.get(
+        Uri.parse(url),
+      );
+      final favoriteData = json.decode(favoriteResponse.body);
+
       final List<Product> loadedProduct = [];
       extractedData.forEach((prodId, prodData) {
         loadedProduct.add(
@@ -137,8 +159,10 @@ class Products with ChangeNotifier {
             title: prodData['title'],
             description: prodData['description'],
             price: prodData['price'],
+            isFavorite:
+                favoriteData == null ? false : favoriteData[prodId] ?? false,
             imageUrl: prodData['imageUrl'],
-            isFavorite: prodData['isFavorite'],
+            userId: userId,
           ),
         );
         _products = loadedProduct;

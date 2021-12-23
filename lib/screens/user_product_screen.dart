@@ -9,14 +9,12 @@ import 'package:provider/provider.dart';
 class UserProductScreen extends StatelessWidget {
   const UserProductScreen({Key? key}) : super(key: key);
   static const namedRoute = '/user_product';
-  Future<void> _fetchProduct(BuildContext ctx) async {
-    Provider.of<Products>(ctx, listen: false).fetchProducts();
+  Future<void> _refreshProducts(BuildContext ctx) async {
+    await Provider.of<Products>(ctx, listen: false).fetchProducts(true);
   }
 
   @override
   Widget build(BuildContext context) {
-    final products = Provider.of<Products>(context);
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Your Products'),
@@ -30,18 +28,28 @@ class UserProductScreen extends StatelessWidget {
         ],
       ),
       drawer: const AppDrawer(),
-      body: RefreshIndicator(
-        onRefresh: () => _fetchProduct(context),
-        child: Padding(
-          padding: const EdgeInsets.all(8),
-          child: ListView.builder(
-            itemBuilder: (_, idx) {
-              final prod = products.products[idx];
-              return UserProductItem(prod.id!, prod.title, prod.imageUrl);
-            },
-            itemCount: products.products.length,
-          ),
-        ),
+      body: FutureBuilder(
+        future: _refreshProducts(context),
+        builder: (ctx, snap) => snap.connectionState == ConnectionState.waiting
+            ? const Center(
+                child: CircularProgressIndicator(),
+              )
+            : RefreshIndicator(
+                onRefresh: () => _refreshProducts(context),
+                child: Consumer<Products>(
+                  builder: (context, productsData, _) => Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: ListView.builder(
+                      itemBuilder: (_, idx) {
+                        final prod = productsData.products[idx];
+                        return UserProductItem(
+                            prod.id!, prod.title, prod.imageUrl);
+                      },
+                      itemCount: productsData.products.length,
+                    ),
+                  ),
+                ),
+              ),
       ),
     );
   }

@@ -20,6 +20,9 @@ class OrderItem {
 
 class Orders with ChangeNotifier {
   List<OrderItem> _orders = [];
+  final String? userId;
+  final String? token;
+  Orders(this.token, this.userId, this._orders);
 
   List<OrderItem> get orders {
     return [..._orders];
@@ -29,9 +32,10 @@ class Orders with ChangeNotifier {
 
   Future<void> fetchOrders() async {
     try {
-      final response = await http.get(Uri.parse('$uri/orders.json'));
+      final response =
+          await http.get(Uri.parse('$uri/orders/$userId.json?auth=$token'));
       final List<OrderItem> loadedOrders = [];
-      final extractedData = json.decode(response.body) as Map<String, dynamic>;
+      final extractedData = json.decode(response.body) as Map<String, dynamic>?;
       if (extractedData == null) {
         return;
       }
@@ -62,7 +66,7 @@ class Orders with ChangeNotifier {
     final timeStamp = DateTime.now();
 
     final response = await http.post(
-      Uri.parse('$uri/orders.json'),
+      Uri.parse('$uri/orders/$userId.json?auth=$token'),
       body: json.encode(
         {
           'amount': total,
