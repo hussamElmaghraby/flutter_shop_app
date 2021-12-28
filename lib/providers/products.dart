@@ -109,7 +109,7 @@ class Products with ChangeNotifier {
 
   Future<void> updateProduct(String id, Product newProduct) async {
     try {
-      await http.patch(
+      await http.put(
         Uri.parse('$uri/products/$id.json?auth=$authToken'),
         body: json.encode(
           {

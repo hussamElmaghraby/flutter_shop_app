@@ -18,40 +18,59 @@ class ProductDetailScreen extends StatelessWidget {
     String productId = ModalRoute.of(context)!.settings.arguments as String;
     final product = providerData.findById(productId);
     return Scaffold(
-      appBar: AppBar(
-        title: Text(product.title),
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            const SizedBox(
-              height: 2,
-            ),
-            SizedBox(
-              height: 300,
-              width: double.infinity,
-              child: Image.network(
-                product.imageUrl,
-                fit: BoxFit.cover,
+      // appBar: AppBar(
+      //   title: Text(product.title),
+      // ),
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            expandedHeight: 300,
+            pinned: true,
+            flexibleSpace: FlexibleSpaceBar(
+              title: Text(
+                product.title,
+              ),
+              background: Hero(
+                tag: product.id!,
+                child: Image.network(
+                  product.imageUrl,
+                  fit: BoxFit.cover,
+                ),
               ),
             ),
-            const SizedBox(
-              height: 10,
+          ),
+          SliverList(
+            delegate: SliverChildListDelegate(
+              [
+                const SizedBox(
+                  height: 2,
+                ),
+                const SizedBox(
+                  height: 10,
+                ),
+                Text(
+                  '\$${product.price}',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.headline1,
+                ),
+                const SizedBox(
+                  height: 10,
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Text(product.description, textAlign: TextAlign.center),
+                ),
+              ],
             ),
-            Text(
-              '\$${product.price}',
-              style: Theme.of(context).textTheme.headline1,
-            ),
-            const SizedBox(
-              height: 10,
-            ),
-            Padding(
-              padding: const EdgeInsets.all(10),
-              child: Text(product.description, textAlign: TextAlign.center),
-            ),
-          ],
-        ),
+          ),
+          SizedBox(
+            height: 800,
+          )
+        ],
+        // child: Column(
+        //   children: [],
       ),
     );
+    // );
   }
 }

@@ -3,6 +3,7 @@ import 'package:flutter_shop_app/providers/Cart.dart';
 import 'package:flutter_shop_app/providers/auth.dart';
 import 'package:flutter_shop_app/providers/orders.dart';
 import 'package:flutter_shop_app/providers/products.dart';
+import 'package:flutter_shop_app/screens/splash_screen.dart';
 import 'package:flutter_shop_app/screens/auth_screen.dart';
 import 'package:flutter_shop_app/screens/cart_screen.dart';
 import 'package:flutter_shop_app/screens/edit_product_screen.dart';
@@ -64,16 +65,23 @@ class MyApp extends StatelessWidget {
                         fontWeight: FontWeight.bold),
                   ),
                 ),
-                home: auth.isAuth ? ProductsOverviewScreen() : AuthScreen(),
+                home: auth.isAuth
+                    ? ProductsOverviewScreen()
+                    : FutureBuilder(
+                        future: auth.tryAutoLogin(),
+                        builder: (_, snapshot) =>
+                            snapshot.connectionState == ConnectionState.waiting
+                                ? SplashScreen()
+                                : AuthScreen()),
                 routes: {
                   ProductDetailScreen.namedRoute: (context) =>
                       ProductDetailScreen(),
-                  CartScreen.routeName: (context) => CartScreen(),
-                  OrdersScreen.namedRoute: (context) => OrdersScreen(),
+                  CartScreen.routeName: (context) => const CartScreen(),
+                  OrdersScreen.namedRoute: (context) => const OrdersScreen(),
                   UserProductScreen.namedRoute: (context) =>
-                      UserProductScreen(),
+                      const UserProductScreen(),
                   EditProductScreen.namedRoute: (context) =>
-                      EditProductScreen(),
+                      const EditProductScreen(),
                 },
               )),
     );

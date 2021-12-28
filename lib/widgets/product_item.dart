@@ -19,15 +19,19 @@ class ProductItem extends StatelessWidget {
       borderRadius: BorderRadius.circular(15),
       child: GridTile(
         child: GestureDetector(
-          onTap: () {
-            Navigator.of(context).pushNamed(ProductDetailScreen.namedRoute,
-                arguments: product.id);
-          },
-          child: Image.network(
-            product.imageUrl,
-            fit: BoxFit.cover,
-          ),
-        ),
+            onTap: () {
+              Navigator.of(context).pushNamed(ProductDetailScreen.namedRoute,
+                  arguments: product.id);
+            },
+            child: Hero(
+              // it should be unique
+              tag: product.id!,
+              child: FadeInImage(
+                placeholder: const AssetImage('assets/images/product.png'),
+                image: NetworkImage(product.imageUrl),
+                fit: BoxFit.cover,
+              ),
+            )),
         footer: GridTileBar(
           title: Text(
             product.title,
